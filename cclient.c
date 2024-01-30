@@ -25,6 +25,7 @@
 #include "networks.h"
 #include "safeUtil.h"
 #include "send_and_receive.h"
+#include "pollLib.h"
 
 #define MAXBUF 1024
 #define DEBUG_FLAG 1
@@ -33,7 +34,7 @@ void sendToServer(int socketNum);
 int readFromStdin(uint8_t * buffer);
 void checkArgs(int argc, char * argv[]);
 
-void signalHandler(int signal);
+// void signalHandler(int signal);
 
 //needs to be global
 int socketNum = 0;         //socket descriptor
@@ -46,12 +47,25 @@ int main(int argc, char * argv[])
 	socketNum = tcpClientSetup(argv[1], argv[2], DEBUG_FLAG);
 	
 	//for ^C
-    signal (SIGQUIT, signalHandler);
-
+    // signal (SIGQUIT, signalHandler);
+	setupPollSet();
+	addToPollSet(socketNum);
+	addToPollSet(STDIN_FILENO);
 	// whie loop to always send to server
+	int socket_num_check = 0;
 	while (1)
 	{
-		sendToServer(socketNum);
+		socket_num_check = pollCall(-1);
+		if(socket_num_check == 0)
+		{
+			sendToServer(socketNum);
+		}		
+		else if(socket_num_check == socketNum)
+		{
+			printf("server has terminated \n");
+			close(socketNum);
+        	exit(0);
+		}
 	}
 	
 	return 0;
@@ -69,7 +83,7 @@ void sendToServer(int socketNum)
 	
 	//sending PDU to client
 	sent =  sendPDU(socketNum, sendBuf, sendLen);
-	if (sent < 0) //error chekcing
+	if (sent <= 0) //error chekcing
 	{
 		perror("send call");
 		exit(-1);
@@ -113,12 +127,12 @@ void checkArgs(int argc, char * argv[])
 	}
 }
 
-void signalHandler(int client_signal)
-{
-    if (client_signal == SIGQUIT) //only tests ^c
-    {
-        // Shut down socket
-        close(socketNum);
-        exit(0);
-    }
-}
+// void signalHandler(int client_signal)
+// {
+//     if (client_signal == SIGQUIT) //only tests ^c
+//     {
+//         // Shut down socket
+//         close(socketNum);
+//         exit(0);
+//     }
+// }

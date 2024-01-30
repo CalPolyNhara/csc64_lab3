@@ -111,9 +111,11 @@ void recvFromClient(int clientSocket)
 		exit(-1);
 	}
 
-	if (messageLen <= 0)
+	if (messageLen == 0)
 	{
 		printf("Client closed connection on socket %d. Closing socket.\n", clientSocket);
+		close(clientSocket);
+		removeFromPollSet(clientSocket);
 	}
 	else
 	{
