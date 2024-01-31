@@ -71,6 +71,11 @@ int main(int argc, char * argv[])
 	return 0;
 }
 
+void client_blocking()
+{
+	pollCall(-1);
+}
+
 void sendToServer(int socketNum)
 {
 	uint8_t sendBuf[MAXBUF];   // Data buffer
